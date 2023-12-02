@@ -365,3 +365,8 @@ FodyWeavers.xsd
 # Raport files
 *.txt
 *.docx
+
+# Misc
+*.sln
+*.vcxproj
+*.filters
