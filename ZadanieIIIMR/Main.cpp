@@ -20,11 +20,10 @@ struct Vertex {
 string give_file_name();
 int give_threshold();
 int give_substring_length();
-
-//void read_file_data(vector <string>(&fasta)[5], string file_name);
 void read_fasta_data(vector <char>(&fasta)[5], string file_name);
 void read_qual_data(vector<int>(&qual)[5], string file_name);
 void delete_below_threshold(vector<char>(&fasta)[5], vector<int>(&qual)[5], vector<char>(&sequence)[5], vector<int>(&input_sequence_index)[5], int threshold);
+void create_graph(vector<Vertex>(&graph), vector<char> sequence[5], vector<int>(input_sequence_index)[5], int substring_length);
 
 //main project
 int main() {
@@ -38,7 +37,7 @@ int main() {
 //new vector<char> holding chars after threshold rejection and indexes of these chars from original sequence 
 	vector<char> sequence[5];
 	vector<int> input_sequence_index[5];
-
+	vector<Vertex> graph; //vector of oligonculeotides
 
 	file_name = give_file_name();
 	threshold = give_threshold();
@@ -48,26 +47,28 @@ int main() {
 	read_qual_data(qual, file_name + ".qual"); //  reading data from qual file
 
 	delete_below_threshold(fasta, qual, sequence, input_sequence_index, threshold); //deleting nucleotides form sequence below threshold
+	// the data is now stored in vector of chars along with corresponding vector of input_sequence_index
 
 	///struktura/klasa przechowująca numer pierwszego nukleotydu w oligonukleotydzie, sekwencje oligonukleotydową i (ewentualnie) numer sekwencji z kórej on pochodzi 
 	//funkcja dodająca do tej struktury te oligonukleotydy o długości substring_length jedne po drugim eg: 1ACTG 2CTGT ...
 	// porównanie i znalezienie tych oligonukleotydów pomiędzy sekwencjami jeżeli odległość między numerem pierwszego nukleotydu jest
 	//  nie większa od substring_length * 10
-	vector<Vertex> graph; //vector of oligonculeotides
 	
-	for (int i = 0; i < 5; i++) { // for each sequence
-		int counter = 0; //at which nucleotide from sequence we currently are in
-		while (counter < sequence[i].size()) {	//Do as many times so you exhaust whole sequence, beware of substring frame
-			oligonucleotide.first_index = input_sequence_index[i][counter]; // i - sequence number, counter - index of first nucleotide
-			oligonucleotide.nr_seq = i; 
-			for (int k = 0; k < substring_length; k++) { // iterate as many times as there is substring_length
-				oligonucleotide.oligo_sequence += sequence[i].at(counter++);
-			}
-			counter -= (substring_length - 2); // counter is set to one place higher after this operation as we progress with counter by increasing it by
-			// one substring_length
-			graph.push_back(oligonucleotide);
-		}
-	}
+	create_graph(graph, sequence, input_sequence_index, substring_length);
+	//for (int i = 0; i < 5; i++) { // for each sequence
+	//	int counter = 0; //at which nucleotide from sequence we currently are in
+	//	while (counter < (sequence[i].size() - (substring_length - 1))){	//Do as many times so you exhaust whole sequence, beware of substring frame
+	//		Vertex oligonucleotide;
+	//		oligonucleotide.first_index = input_sequence_index[i][counter]; // i - sequence number, counter - index of first nucleotide
+	//		oligonucleotide.nr_seq = i; 
+	//		for (int k = 0; k < substring_length; k++) { // iterate as many times as there is substring_length
+	//			oligonucleotide.oligo_sequence += sequence[i].at(counter++);
+	//		}
+	//		counter -= (substring_length - 1); // counter is set to one place higher after this operation as we progress with counter by increasing it by
+	//		// one nucleotide
+	//		graph.push_back(oligonucleotide);
+	//	}
+	//}
 	//test
 	//cout << substring_length << endl;
 	//for (int i = 0; i < 5; i++) {
@@ -104,6 +105,7 @@ int main() {
 	//	}
 	//	std::cout << std::endl;
 	//}
+
 	for (int i = 0; i < 5; i++) {
 		cout << "instance [" << i << "]" << endl;
 		for (int j = 0; j < fasta[i].size(); j++) {
@@ -115,6 +117,12 @@ int main() {
 		}
 		cout << endl;
 
+	}
+
+	for (const Vertex& vertex : graph) {
+		cout << "first_index: " << vertex.first_index << ", "
+			<< "nr_seq: " << vertex.nr_seq << ", "
+			<< "oligo_sequence: " << vertex.oligo_sequence << endl;
 	}
 
 }
@@ -203,15 +211,33 @@ void read_qual_data(vector <int>(&qual)[5], string file_name) {
 		instance.close();
 	}
 }
+
 void delete_below_threshold(vector<char>(&fasta)[5], vector<int>(&qual)[5], vector<char>(&sequence)[5], vector<int>(&input_sequence_index)[5], int threshold) {
 	for (int i = 0; i < 5; i++) { //save particular chars from original indexes which qual values are equal or above threshold
 		int counter = 1;
 		for (int j = 0; j < fasta[i].size(); j++) {
-			if (qual[i][j] >= threshold) {
+			if (qual[i][j] <= threshold) {
 				sequence[i].push_back(fasta[i][j]);
 				input_sequence_index[i].push_back(counter);
 			}
 			++counter;
+		}
+	}
+}
+
+void create_graph(vector<Vertex>(&graph), vector<char> sequence[5], vector<int>(input_sequence_index)[5], int substring_length) {
+	for (int i = 0; i < 5; i++) { // for each sequence
+		int counter = 0; //at which nucleotide from sequence we currently are in
+		while (counter < (sequence[i].size() - (substring_length - 1))) {	//Do as many times so you exhaust whole sequence, beware of substring frame
+			Vertex oligonucleotide;
+			oligonucleotide.first_index = input_sequence_index[i][counter]; // i - sequence number, counter - index of first nucleotide
+			oligonucleotide.nr_seq = i;
+			for (int k = 0; k < substring_length; k++) { // iterate as many times as there is substring_length
+				oligonucleotide.oligo_sequence += sequence[i].at(counter++);
+			}
+			counter -= (substring_length - 1); // counter is set to one place higher after this operation as we progress with counter by increasing it by
+			// one nucleotide
+			graph.push_back(oligonucleotide);
 		}
 	}
 }
