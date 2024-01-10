@@ -14,6 +14,11 @@ struct Vertex {
 	int first_index;
 	int nr_seq;
 	string oligo_sequence;
+
+	friend ostream& operator<<(ostream& os, const Vertex& v) {
+		os << "Seq number: " << v.nr_seq << "\tPosition: " << v.first_index << "\tSequence: " << v.oligo_sequence;
+		return os;
+	}
 };
 
 //declarations of functions
@@ -23,7 +28,7 @@ int give_substring_length();
 void read_fasta_data(vector <char>(&fasta)[5], string file_name);
 void read_qual_data(vector<int>(&qual)[5], string file_name);
 void delete_below_threshold(vector<char>(&fasta)[5], vector<int>(&qual)[5], vector<char>(&sequence)[5], vector<int>(&input_sequence_index)[5], int threshold);
-void create_graph(vector<Vertex>(&graph), vector<char> sequence[5], vector<int>(input_sequence_index)[5], int substring_length);
+void create_graph(vector<vector<Vertex>> &graph, vector<char> sequence[5], vector<int> input_sequence_index[5], int substring_length);
 
 //main project
 int main() {
@@ -37,7 +42,7 @@ int main() {
 //new vector<char> holding chars after threshold rejection and indexes of these chars from original sequence 
 	vector<char> sequence[5];
 	vector<int> input_sequence_index[5];
-	vector<Vertex> graph; //vector of oligonculeotides
+	vector<vector<Vertex>> graph; 
 
 	file_name = give_file_name();
 	threshold = give_threshold();
@@ -69,6 +74,13 @@ int main() {
 	//		graph.push_back(oligonucleotide);
 	//	}
 	//}
+	// new function that works as "graph" but Vertices on appropriate first layer of vector 
+	
+	int sum = 0; // iterator for all vertices in all sequences - may be redundant
+	for (int i = 0; i < 5; i++) {
+		sum += input_sequence_index->size();
+	}
+	 
 	//test
 	//cout << substring_length << endl;
 	//for (int i = 0; i < 5; i++) {
@@ -119,10 +131,11 @@ int main() {
 
 	}
 
-	for (const Vertex& vertex : graph) {
-		cout << "first_index: " << vertex.first_index << ", "
-			<< "nr_seq: " << vertex.nr_seq << ", "
-			<< "oligo_sequence: " << vertex.oligo_sequence << endl;
+	for (const auto& vertices : graph) {
+		for (const auto& vertex : vertices) {
+			cout << vertex << " ";
+		}
+		cout << endl;
 	}
 
 }
@@ -216,7 +229,7 @@ void delete_below_threshold(vector<char>(&fasta)[5], vector<int>(&qual)[5], vect
 	for (int i = 0; i < 5; i++) { //save particular chars from original indexes which qual values are equal or above threshold
 		int counter = 1;
 		for (int j = 0; j < fasta[i].size(); j++) {
-			if (qual[i][j] <= threshold) {
+			if (qual[i][j] >= threshold) {
 				sequence[i].push_back(fasta[i][j]);
 				input_sequence_index[i].push_back(counter);
 			}
@@ -225,7 +238,7 @@ void delete_below_threshold(vector<char>(&fasta)[5], vector<int>(&qual)[5], vect
 	}
 }
 
-void create_graph(vector<Vertex>(&graph), vector<char> sequence[5], vector<int>(input_sequence_index)[5], int substring_length) {
+void create_graph(vector<vector<Vertex>>&graph, vector<char> sequence[5], vector<int> input_sequence_index[5], int substring_length) {
 	for (int i = 0; i < 5; i++) { // for each sequence
 		int counter = 0; //at which nucleotide from sequence we currently are in
 		while (counter < (sequence[i].size() - (substring_length - 1))) {	//Do as many times so you exhaust whole sequence, beware of substring frame
@@ -237,7 +250,7 @@ void create_graph(vector<Vertex>(&graph), vector<char> sequence[5], vector<int>(
 			}
 			counter -= (substring_length - 1); // counter is set to one place higher after this operation as we progress with counter by increasing it by
 			// one nucleotide
-			graph.push_back(oligonucleotide);
+			graph.emplace_back(vector<Vertex>{oligonucleotide});
 		}
 	}
 }
