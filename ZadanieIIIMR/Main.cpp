@@ -28,7 +28,7 @@ int give_substring_length();
 void read_fasta_data(vector <char>(&fasta)[5], string file_name);
 void read_qual_data(vector<int>(&qual)[5], string file_name);
 void delete_below_threshold(vector<char>(&fasta)[5], vector<int>(&qual)[5], vector<char>(&sequence)[5], vector<int>(&input_sequence_index)[5], int threshold);
-void create_graph(vector<vector<Vertex>> &graph, vector<char> sequence[5], vector<int> input_sequence_index[5], int substring_length);
+void create_graph(vector<vector<Vertex>>& graph, vector<char> sequence[5], vector<int> input_sequence_index[5], int substring_length);
 void connect_edges(vector<vector<Vertex>>& graph, int substring_length);
 vector<Vertex> find_result(vector<vector<Vertex>>graph);
 
@@ -43,7 +43,7 @@ int main() {
 	string line;
 	vector<char> sequence[5];
 	vector<int> input_sequence_index[5];
-	vector<vector<Vertex>> graph; 
+	vector<vector<Vertex>> graph;
 
 	file_name = give_file_name();
 	threshold = give_threshold();
@@ -62,16 +62,16 @@ int main() {
 
 	// find motive using naive algorithm
 	vector<Vertex> result = find_result(graph);
-	
+
 	//wypisanie rezultatu na wyjściu w postaci: nr sekwencji wejściowej, 
 	// nr pozycji w tej sekwencji, dla każdego podciągu wchodzącego w skład kliki (struktury zbliżonej do kliki)
 	// oraz sekwencję nukleotydową podciągu
 
 	cout << endl << "results: " << endl;
 	for (const auto& vertex : result) {
-			cout << vertex << endl;
+		cout << vertex << endl;
 	}
-		cout << endl;
+	cout << endl;
 
 	//test
 	//cout << substring_length << endl;
@@ -230,7 +230,7 @@ void delete_below_threshold(vector<char>(&fasta)[5], vector<int>(&qual)[5], vect
 	}
 }
 
-void create_graph(vector<vector<Vertex>>&graph, vector<char> sequence[5], vector<int> input_sequence_index[5], int substring_length) {
+void create_graph(vector<vector<Vertex>>& graph, vector<char> sequence[5], vector<int> input_sequence_index[5], int substring_length) {
 	for (int i = 0; i < 5; i++) { // for each sequence
 		int counter = 0; //at which nucleotide from sequence we currently are in
 		while (counter < (sequence[i].size() - (substring_length - 1))) {	//Do as many times so you exhaust whole sequence, beware of substring frame
@@ -249,19 +249,36 @@ void create_graph(vector<vector<Vertex>>&graph, vector<char> sequence[5], vector
 
 void connect_edges(vector<vector<Vertex> >& graph, int substring_length) {
 	for (int i = 0; i < (graph.size() - 1); i++) { // "-1" so it wont compare the last element to non-existing element of this vector
+		next_comparison:	
 		for (int j = i + 1; j < graph.size(); j++) {
-			int distance = 0; // distance between oligonucleotides
-			if (graph[i][0].first_index > graph[j][0].first_index) {
-				distance = graph[i][0].first_index - graph[j][0].first_index;
-			}
-			else {
-				distance = graph[j][0].first_index - graph[i][0].first_index;
-			}
-			if (graph[i][0].oligo_sequence == graph[j][0].oligo_sequence // if oligosequences are aligned
-				&& graph[i][0].nr_seq != graph[j][0].nr_seq  // compare different sequences
-				&& distance <= (substring_length * 10)) { // if oligonucleotides arent too far from each other
-				graph[i].push_back(graph[j][0]); // graph[i][0] have edges to -> graph[i][j]
-				graph[j].push_back(graph[i][0]);
+
+			int InitialSizeI = graph[i].size();
+			int InitialSizeJ = graph[j].size();
+
+			for (int index_i = 0; index_i < InitialSizeI; ++index_i) { //changed
+				for (int index_j = 0; index_j < InitialSizeJ; ++index_j) { //changed
+
+					const Vertex& vertex_i = graph[i][index_i];
+					const Vertex& vertex_j = graph[j][index_j];
+
+					int distance = 0; // distance between oligonucleotides
+					if (vertex_i.first_index > vertex_j.first_index) {
+						distance = vertex_i.first_index - vertex_j.first_index;
+					}
+					else {
+						distance = vertex_j.first_index - vertex_i.first_index;
+					}
+
+					if (vertex_i.oligo_sequence == vertex_j.oligo_sequence  // if oligosequences are aligned
+						&& vertex_i.nr_seq != vertex_j.nr_seq  // compare different sequences
+						&& distance <= (substring_length * 10)) { // if oligonucleotides arent too far from each other
+						graph[i].push_back(graph[j][index_j]); // graph[i][0] have edges to -> graph[i][j]
+						graph[j].push_back(graph[i][index_i]);
+					}
+					else {
+						goto next_comparison;
+					}
+				}
 			}
 		}
 	}
@@ -272,9 +289,6 @@ vector<Vertex> find_result(vector<vector<Vertex>>graph) {
 	for (const auto& outerVec : graph) {
 		unordered_map<int, Vertex> nrSeqToVertexMap;
 
-		if (!result.empty()) {
-			return result;
-		}
 		for (const auto& vertex : outerVec) {
 			// Check if nr_seq is within the required range and is not already found
 			if (nrSeqToVertexMap.count(vertex.nr_seq) == 0) {
@@ -287,9 +301,10 @@ vector<Vertex> find_result(vector<vector<Vertex>>graph) {
 				for (int i = 0; i < 5; ++i) {
 					result.push_back(nrSeqToVertexMap[i]);
 				}
-
-				break; // No need to check further for this outer vector
+				return result;
+				// No need to check further for this outer vector
 			}
 		}
 	}
+	return result;
 }
