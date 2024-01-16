@@ -69,9 +69,9 @@ int main() {
 
 	cout << endl << "results: " << endl;
 	for (const auto& vertex : result) {
-			cout << vertex << endl;
+		cout << vertex << endl;
 	}
-		cout << endl;
+	cout << endl;
 
 	//test
 	//cout << substring_length << endl;
@@ -287,9 +287,9 @@ vector<Vertex> find_result(vector<vector<Vertex>>graph) {
 				for (int i = 0; i < 5; ++i) {
 					result.push_back(nrSeqToVertexMap[i]);
 				}
-
-				break; // No need to check further for this outer vector
+				return result;
 			}
 		}
 	}
+	return result;
 }
