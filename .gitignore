@@ -370,3 +370,5 @@ FodyWeavers.xsd
 *.sln
 *.vcxproj
 *.filters
+*.doc
+*.bak
